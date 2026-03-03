@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>WISTFUL | Anna University GPA & Combined CGPA Calculator</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+    font-family:'Poppins',sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:0;
+    color:#333;
+}
+.header{
+    background:#1e3c72;
+    color:white;
+    padding:20px 40px;
+}
+.header h1{
+    margin:0;
+    font-size:28px;
+    letter-spacing:2px;
+}
+.brand{
+    font-size:13px;
+    letter-spacing:3px;
+    opacity:0.8;
+}
+.container{
+    width:95%;
+    max-width:1200px;
+    margin:30px auto;
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+}
+h2{
+    margin-top:10px;
+    font-weight:600;
+    color:#1e3c72;
+}
+select,input{
+    padding:8px 10px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-family:'Poppins';
+    margin-right:10px;
+}
+table{
+    width:100%;
+    margin-top:20px;
+    border-collapse: collapse;
+}
+th{
+    background:#1e3c72;
+    color:white;
+    padding:10px;
+    font-size:14px;
+}
+td{
+    padding:10px;
+    border:1px solid #ddd;
+    font-size:14px;
+}
+tr:nth-child(even){
+    background:#f9f9f9;
+}
+.button-group{
+    margin-top:15px;
+}
+button{
+    padding:8px 16px;
+    background:#1e3c72;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    margin-right:8px;
+    font-size:13px;
+}
+button.secondary{
+    background:#6c757d;
+}
+button.danger{
+    background:#c0392b;
+}
+button:hover{
+    opacity:0.9;
+}
+#result,#combinedResult{
+    margin-top:20px;
+    font-size:20px;
+    font-weight:600;
+    color:#1e3c72;
+}
+.hidden{ display:none; }
+hr{
+    margin:40px 0;
+    border:none;
+    height:1px;
+    background:#ddd;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>WISTFUL</h1>
+    <div class="brand">PROFESSIONAL GPA & CGPA CALCULATOR</div>
+</div>
+
+<div class="container">
+
+<h2>Semester GPA Calculator</h2>
+
+<div>
+<select id="dept" onchange="handleDepartment()">
+<option value="">SELECT DEPARTMENT</option>
+<option value="AIDS">AI & DS</option>
+</select>
+
+<select id="sem" onchange="loadSubjects()" disabled>
+<option value="">SELECT SEMESTER</option>
+<option value="1">SEMESTER 1</option>
+<option value="2">SEMESTER 2</option>
+<option value="3">SEMESTER 3</option>
+<option value="4">SEMESTER 4</option>
+<option value="5">SEMESTER 5</option>
+</select>
+
+<button class="secondary" onclick="previousSemester()">Previous</button>
+</div>
+
+<table id="table" class="hidden">
+<tr>
+<th>SEM</th>
+<th>CODE</th>
+<th>SUBJECT</th>
+<th>CREDITS</th>
+<th>GRADE</th>
+</tr>
+</table>
+
+<div class="button-group hidden" id="gpaButtons">
+<button onclick="calculate()">Calculate GPA</button>
+<button onclick="addNewSubject()">Add Subject</button>
+<button class="secondary" onclick="undoLastSubject()">Undo Subject</button>
+<button class="danger" onclick="undoGPA()">Undo GPA</button>
+</div>
+
+<div id="result"></div>
+
+<hr>
+
+<button onclick="showCGPASection()">Show Combined CGPA Calculator</button>
+
+<div id="cgpaSection" class="hidden">
+
+<h2>Combined CGPA Calculator</h2>
+
+<table id="cgpaTable">
+<tr>
+<th>SEMESTER</th>
+<th>GPA</th>
+<th>TOTAL CREDITS</th>
+</tr>
+<tr><td>SEMESTER 1</td><td><input type="number" step="0.01" id="gpa1"></td><td><input type="number" id="credit1"></td></tr>
+<tr><td>SEMESTER 2</td><td><input type="number" step="0.01" id="gpa2"></td><td><input type="number" id="credit2"></td></tr>
+<tr><td>SEMESTER 3</td><td><input type="number" step="0.01" id="gpa3"></td><td><input type="number" id="credit3"></td></tr>
+<tr><td>SEMESTER 4</td><td><input type="number" step="0.01" id="gpa4"></td><td><input type="number" id="credit4"></td></tr>
+<tr><td>SEMESTER 5</td><td><input type="number" step="0.01" id="gpa5"></td><td><input type="number" id="credit5"></td></tr>
+</table>
+
+<div class="button-group">
+<button onclick="addSemester()">Add Semester</button>
+<button class="secondary" onclick="undoSemester()">Undo Semester</button>
+<button onclick="calculateCGPA()">Calculate Combined CGPA</button>
+<button class="danger" onclick="undoCGPA()">Undo CGPA</button>
+</div>
+
+<div id="combinedResult"></div>
+
+</div>
+</div>
+
+<script>
+
+var table=document.getElementById("table");
+var semesterCount=5;
+var lastSubjectRow=null;
+var lastSemesterRow=null;
+var previousGPA="";
+var previousCGPA="";
+
+function showCGPASection(){
+document.getElementById("cgpaSection").classList.remove("hidden");
+}
+
+function handleDepartment(){
+var dept=document.getElementById("dept").value;
+var sem=document.getElementById("sem");
+if(dept===""){
+sem.disabled=true;
+sem.value="";
+resetTable();
+table.classList.add("hidden");
+document.getElementById("gpaButtons").classList.add("hidden");
+document.getElementById("result").innerHTML="";
+}else{
+sem.disabled=false;
+}
+}
+
+function resetTable(){
+table.innerHTML="<tr><th>SEM</th><th>CODE</th><th>SUBJECT</th><th>CREDITS</th><th>GRADE</th></tr>";
+}
+
+function previousSemester(){
+var sem=document.getElementById("sem");
+if(sem.value>1){
+sem.value=parseInt(sem.value)-1;
+loadSubjects();
+}
+}
+
+function loadSubjects(){
+var sem=document.getElementById("sem").value;
+if(sem===""){ table.classList.add("hidden"); return; }
+resetTable();
+table.classList.remove("hidden");
+document.getElementById("gpaButtons").classList.remove("hidden");
+document.getElementById("result").innerHTML="";
+
+if(sem==1){
+addSubject("01","BS3171","PHYSICAL AND CHEMISTRY LABORATORY",2);
+addSubject("01","CY3151","ENGINEERING CHEMISTRY",3);
+addSubject("01","GE3151","PROBLEM SOLVING AND PYTHON PROGRAMMING",3);
+addSubject("01","GE3171","PROBLEM SOLVING AND PYTHON PROGRAMMING LABORATORY",2);
+addSubject("01","GE3152","HERITAGE OF TAMILS",1);
+addSubject("01","HS3152","PROFESSIONAL ENGLISH - I",3);
+addSubject("01","MA3151","MATRICES AND CALCULUS",4);
+addSubject("01","PH3151","ENGINEERING PHYSICS",3);
+addSubject("01","GE3172","ENGLISH LABORATORY",1);
+}
+if(sem==2){
+addSubject("02","HS3252","PROFESSIONAL ENGLISH II",2);
+addSubject("02","MA3251","STATISTICS AND NUMERICAL METHODS",4);
+addSubject("02","PH3256","PHYSICS FOR INFORMATION SCIENCE",3);
+addSubject("02","BE3251","BASIC ELECTRICAL AND ELECTRONICS ENGINEERING",4);
+addSubject("02","GE3251","ENGINEERING GRAPHICS",4);
+addSubject("02","GE3252","TAMILS AND TECHNOLOGY",2);
+addSubject("02","GE3271","ENGINEERING PRACTICES LABORATORY",2);
+addSubject("02","AD3271","DATA STRUCTURES DESIGN LABORATORY",2);
+addSubject("02","GE3272","COMMUNICATION LABORATORY",2);
+addSubject("02","AD3251","DATA STRUCTURES DESIGN",3);
+}
+if(sem==3){
+addSubject("03","MA3354","DISCRETE MATHEMATICS",4);
+addSubject("03","CS3351","DIGITAL PRINCIPLES AND COMPUTER ORGANIZATION",4);
+addSubject("03","AD3391","DATABASE DESIGN AND MANAGEMENT",3);
+addSubject("03","AD3351","DESIGN AND ANALYSIS OF ALGORITHMS",4);
+addSubject("03","AD3301","DATA EXPLORATION AND VISUALIZATION",4);
+addSubject("03","AL3391","ARTIFICIAL INTELLIGENCE",3);
+addSubject("03","AD3381","DATABASE DESIGN AND MANAGEMENT LABORATORY",1.5);
+addSubject("03","AD3311","ARTIFICIAL INTELLIGENCE LABORATORY",1.5);
+addSubject("03","GE3361","PROFESSIONAL DEVELOPMENT",1);
+}
+if(sem==4){
+addSubject("04","MA3391","PROBABILITY AND STATISTICS",4);
+addSubject("04","AL3452","OPERATING SYSTEMS",4);
+addSubject("04","AL3451","MACHINE LEARNING",3);
+addSubject("04","AD3491","FUNDAMENTALS OF DATA SCIENCE AND ANALYTICS",3);
+addSubject("04","CS3591","COMPUTER NETWORKS",4);
+addSubject("04","GE3451","ENVIRONMENTAL SCIENCES AND SUSTAINABILITY",2);
+addSubject("04","AD3411","DATA SCIENCE AND ANALYTICS LABORATORY",2);
+addSubject("04","AD3461","MACHINE LEARNING LABORATORY",2);
+}
+if(sem==5){
+addSubject("05","AD3501","DEEP LEARNING",3);
+addSubject("05","CW3551","DATA AND INFORMATION SECURITY",3);
+addSubject("05","CS3551","DISTRIBUTED COMPUTING",3);
+addSubject("05","CS3334","BIG DATA ANALYTICS",3);
+addSubject("05","CCS370","UI AND UX DESIGN",3);
+addSubject("05","CCS366","SOFTWARE TESTING AND AUTOMATION",3);
+addSubject("05","MX3084","DISASTER RISK REDUCTION AND MANAGEMENT",0);
+addSubject("05","AD3511","DEEP LEARNING LABORATORY",2);
+addSubject("05","AD3512","SUMMER INTERNSHIP",2);
+}
+}
+
+function addSubject(sem,code,name,credit){
+var row=table.insertRow();
+row.insertCell(0).innerHTML=sem;
+row.insertCell(1).innerHTML=code;
+row.insertCell(2).innerHTML=name;
+row.insertCell(3).innerHTML=credit;
+row.insertCell(4).innerHTML='<select><option value="10">O</option><option value="9">A+</option><option value="8">A</option><option value="7">B+</option><option value="6">B</option><option value="5">C</option><option value="0">U</option></select>';
+}
+
+function addNewSubject(){
+var sem=document.getElementById("sem").value;
+if(sem==="") return;
+lastSubjectRow=table.insertRow();
+lastSubjectRow.innerHTML="<td>"+sem+"</td><td>NEW</td><td>NEW SUBJECT</td><td>3</td><td><select><option value='10'>O</option><option value='9'>A+</option><option value='8'>A</option><option value='7'>B+</option><option value='6'>B</option><option value='5'>C</option><option value='0'>U</option></select></td>";
+}
+
+function undoLastSubject(){
+if(lastSubjectRow){ table.deleteRow(lastSubjectRow.rowIndex); lastSubjectRow=null; }
+}
+
+function calculate(){
+previousGPA=document.getElementById("result").innerHTML;
+var rows=table.rows;
+var totalCredits=0,totalPoints=0;
+for(var i=1;i<rows.length;i++){
+var credit=parseFloat(rows[i].cells[3].innerHTML);
+var grade=parseFloat(rows[i].cells[4].querySelector("select").value);
+if(grade!==0 && !isNaN(credit)){
+totalCredits+=credit;
+totalPoints+=credit*grade;
+}
+}
+if(totalCredits>0){
+document.getElementById("result").innerHTML="GPA = "+(totalPoints/totalCredits).toFixed(2);
+}else{
+document.getElementById("result").innerHTML="ALL SUBJECTS FAILED";
+}
+}
+
+function undoGPA(){
+document.getElementById("result").innerHTML=previousGPA;
+}
+
+function addSemester(){
+semesterCount++;
+lastSemesterRow=document.getElementById("cgpaTable").insertRow();
+lastSemesterRow.innerHTML="<td>SEMESTER "+semesterCount+"</td><td><input type='number' step='0.01' id='gpa"+semesterCount+"'></td><td><input type='number' id='credit"+semesterCount+"'></td>";
+}
+
+function undoSemester(){
+if(lastSemesterRow){
+document.getElementById("cgpaTable").deleteRow(lastSemesterRow.rowIndex);
+semesterCount--;
+lastSemesterRow=null;
+}
+}
+
+function calculateCGPA(){
+previousCGPA=document.getElementById("combinedResult").innerHTML;
+let totalWeighted=0,totalCredits=0;
+for(let i=1;i<=semesterCount;i++){
+let g=document.getElementById("gpa"+i);
+let c=document.getElementById("credit"+i);
+if(g&&c){
+let gv=parseFloat(g.value);
+let cv=parseFloat(c.value);
+if(!isNaN(gv)&&!isNaN(cv)){
+totalWeighted+=gv*cv;
+totalCredits+=cv;
+}
+}
+}
+if(totalCredits===0){
+document.getElementById("combinedResult").innerHTML="PLEASE ENTER VALID DATA!";
+return;
+}
+document.getElementById("combinedResult").innerHTML="YOUR COMBINED CGPA IS: "+(totalWeighted/totalCredits).toFixed(2);
+}
+
+function undoCGPA(){
+document.getElementById("combinedResult").innerHTML=previousCGPA;
+}
+
+</script>
+</body>
+</html>
